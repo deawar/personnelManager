@@ -1,0 +1,9 @@
+first_name,last_name,title,department,salary,manager
+John,Doe,Sales Lead,Sales,100000,Ashley Rodriguez
+Mike,Chan,Salesperson,Sales,80000,John Doe
+Ashley,Rodriguez,Lead Engineer,Engineering,150000,
+Kevin,Tupik,Software Engineer,Engineering,120000,Ashley Rodriguez
+Nalia ,Brown,Accountant,Finance,125000,
+Sarah,Lourd,Legal Team Lead,Legal,250000,
+Tom ,Allen,Lawyer,Legal,190000,Sarah Lourd
+Tammer,Galal,Software Engineer,Engineering,120000,Kevin Tupik

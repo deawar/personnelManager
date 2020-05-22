@@ -1,0 +1,9 @@
+id,first_name,last_name,role_id,manager_id
+1,Ashley,Rodriguez,3,
+2,John,Doe,5,1
+3,Kevin,Tupik,7,1
+4,Mike,Chan,6,2
+5,Nalia ,Brown,1,
+6,Sarah,Lourd,4,
+7,Tammer,Galal,7,3
+8,Tom ,Allen,2,6

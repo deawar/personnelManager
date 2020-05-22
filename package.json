@@ -1,0 +1,33 @@
+{
+  "name": "personnelmanager",
+  "version": "1.0.0",
+  "description": "Node application to manage personnel.",
+  "main": "app.js",
+  "dependencies": {
+    "chalk": "^4.0.0",
+    "console.table": "^0.10.0",
+    "figlet": "^1.4.0",
+    "inquirer": "^7.1.0",
+    "mysql": "^2.18.1"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "npm test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/deawar/personnelManager.git"
+  },
+  "keywords": [
+    "node",
+    "mysql",
+    "chalk",
+    "figlet"
+  ],
+  "author": "Dean Warren",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/deawar/personnelManager/issues"
+  },
+  "homepage": "https://github.com/deawar/personnelManager#readme"
+}

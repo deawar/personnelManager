@@ -1,0 +1,8 @@
+id,title,salary,department_id
+1,Accountant,125000,2
+2,Lawyer,190000,3
+3,Lead Engineer,150000,1
+4,Legal Team Lead,250000,3
+5,Sales Lead,100000,4
+6,Salesperson,80000,4
+7,Software Engineer,120000,1
