@@ -1,8 +1,12 @@
+
+require('dotenv').config();
 const inquirer = require('inquirer');
 const chalk = require('chalk');
 const figlet = require('figlet');
 const mysql = require("mysql");
 const cTable = require('console.table');
+const PASSWORD = process.env.PASSWORD;
+const USER = process.env.USER;
 var connection;
 const proc = require('process');
 if (process.env.JAWSDB_URL) {
@@ -11,8 +15,8 @@ if (process.env.JAWSDB_URL) {
     connection = mysql.createConnection({
         host: "localhost",
         port: 3306, // Your port; if not 3306
-        user: "root", // Your username
-        password: "1636Shadowsonny", // Your password
+        user: USER, // Your username
+        password: PASSWORD, // Your password
         database: "companydb"
     });
 }
