@@ -3,8 +3,15 @@ const chalk = require('chalk');
 const figlet = require('figlet');
 const mysql = require("mysql");
 const cTable = require('console.table');
+
+const proc = require('process');
+let PID = proc.pid;
 let message = "";
 let divider = "=";
+let role = [];
+let listRoleArray = [];
+let listManArray = [];
+let id;
 const connection = mysql.createConnection({
     host: "localhost",
     port: 3306, // Your port; if not 3306
@@ -17,33 +24,33 @@ function headingMsg() {
     console.clear();
     console.log(
         chalk.yellow(
-            figlet.textSync('Employee Manager\n' + message, { horizontalLayout: 'default' })
+            figlet.textSync(message, { horizontalLayout: 'fitted' })
         )
     );
 };
 
-function init() {
+ function init() {
     console.clear()
+    //console.log(chalk.greenBright("Server up at PID: " + chalk.blue(PID)));
     console.log(
         chalk.bold.blueBright(
-            figlet.textSync('Employee Manager', {horizontalLayout: 'fitted' })
+            figlet.textSync('Employee Manager', { horizontalLayout: 'fitted' })
         )
     );
     //afterConnection();
-    start();// function to start the menu and general program
-}
+    
+    listRole(id)
+    
 
+}
+//View All Employees
 function viewAllEmp() {
-    let query = "SELECT employee.id, employee.first_name, employee.last_name, role.title, department.name AS department, role.salary, CONCAT(manager.first_name, ' ', manager.last_name) AS manager FROM employee LEFT JOIN role on employee.role_id = role.id LEFT JOIN department on role.department_id = department.id LEFT JOIN employee manager on manager.id = employee.manager_id;";
+    let query = "SELECT employee.id AS Id, employee.first_name AS FirstName, employee.last_name AS LastName, role.title AS Title, department.name AS Department, role.salary AS Salary, CONCAT(manager.first_name, ' ', manager.last_name) AS Manager FROM employee LEFT JOIN role on employee.role_id = role.id LEFT JOIN department on role.department_id = department.id LEFT JOIN employee manager on manager.id = employee.manager_id;";
 
     connection.query(query, function (err, res) {
         if (err) throw err;
         console.log("\n");
-        console.log(
-            chalk.yellow(
-                figlet.textSync(message, { horizontalLayout: 'fitted' })
-            )
-        );
+        headingMsg(message);
         console.log(divider.repeat(120));
         console.table(res);
     })
@@ -51,16 +58,13 @@ function viewAllEmp() {
 
 };
 
+//View All Employees by Department
 function empDept(message) {
-    let query = "SELECT department.name, employee.id, employee.first_name, employee.last_name, role.title FROM `employee`, `department`, `role` WHERE role.`department_id`= department.`id` AND employee.role_id=role.id;"
+    let query = "SELECT department.name AS Department, employee.id AS Id, employee.first_name AS FirstName, employee.last_name AS LastName, role.title FROM `employee`, `department`, `role` WHERE role.`department_id`= department.`id` AND employee.role_id=role.id ORDER BY department_id;"
     connection.query(query, function (err, res) {
         if (err) throw err;
         console.log("\n");
-        console.log(
-            chalk.yellow(
-                figlet.textSync(message, { horizontalLayout: 'fitted' })
-            )
-        );
+        headingMsg(message);
         console.log(divider.repeat(120));
         console.table(res);
     })
@@ -68,75 +72,208 @@ function empDept(message) {
 
 }
 
+//View All Employees by Manager
 function empMan(message) {
-    let query = "SELECT employee.id, employee.first_name, employee.last_name, role.title, department.name AS department, role.salary, CONCAT(manager.first_name, ' ', manager.last_name) AS manager FROM employee LEFT JOIN role on employee.role_id = role.id LEFT JOIN department on role.department_id = department.id LEFT JOIN employee manager on manager.id = employee.manager_id ORDER BY manager;"
-    query+=
-    connection.query(query, function (err, res) {
-        if (err) throw err;
-        console.log("\n");
-        console.log(
-            chalk.yellow(
-                figlet.textSync(message, { horizontalLayout: 'fitted' })
-            )
-        );
-        console.log(divider.repeat(120));
-        console.table(res);
-    })
+    let query = "SELECT employee.id AS Id, employee.first_name AS FirstName, employee.last_name AS LastName, role.title AS Title, department.name AS Department, role.salary AS Salary, CONCAT(manager.first_name, ' ', manager.last_name) AS Manager FROM employee LEFT JOIN role on employee.role_id = role.id LEFT JOIN department on role.department_id = department.id LEFT JOIN employee manager on manager.id = employee.manager_id ORDER BY manager;"
+    query +=
+        connection.query(query, function (err, res) {
+            if (err) throw err;
+            console.log("\n");
+            headingMsg(message);
+            console.log(divider.repeat(120));
+            console.table(res);
+        })
     start();
 
 }
 
-function addRole(message, role, salary, department_id) {
-        // based on their answer
-        console.log("Inserting a new Role...\n");
-        console.log("addRole: ", role);
-        console.log("addSalary: ", salary);
-        console.log("addDepartment_id: ", department_id);
-        
+
+//ADD an Employee
+function addEmployee(message, first_name, last_name, role_id, manager_id) {
+    // based on their answer
+    headingMsg(message);
+    manager_id = parseInt(manager_id);
+
+    console.log("Preparing to Add a new Employee...\n");
+    let doesExist = connection.query("SELECT id FROM employee WHERE first_name=? AND last_name=?;",
+        {
+            first_name: first_name,
+            last_name: last_name
+        },
+        function (err, res) {
+            if (err) throw err;
+            console.log(divider.repeat(120));
+        }
+    );    
+    if (doesExist == 0) {
         let query = connection.query(
+            "INSERT INTO employee SET ?",
+            {
+                first_name: first_name,
+                last_name: last_name,
+                role_id: role_id,
+                manager_id: manager_id
+            },
+            function (err, res) {
+                if (err) throw err;
+                
+                console.log(divider.repeat(120));
+                console.log(res.affectedRows + " new Employee inserted!\n");
+                // Call updateProduct AFTER the INSERT completes
+            }
+        );
+        console.log("A New Employee:\n");
+        console.log("addName: ", first_name + " " + last_name);
+        console.log("\naddRoleId: ", role_id);
+        console.log("\naddManager_Id: ", manager_id + "\nwas added to the Database.");
+    } else{
+        console.log("Employee: "+ first_name + " " + last_name + "already Present in Database.")
+    }
+        
+        // logs the actual query being run
+    start();
+    // console.log(query.sql);
+}
+
+//Add a Role
+function addRole(message, title, salary,department_id) {
+    // based on their answer
+    console.log("Creating a new Role...\n");
+    console.log("Role Title: ", title);
+
+    let query = connection.query(
         "INSERT INTO role SET ?",
         {
-            title: role,
+            title: title,
             salary: salary,
             department_id: department_id
         },
-        function(err, res) {
+        function (err, res) {
             if (err) throw err;
-            console.log(res.affectedRows + " new Role inserted!\n");
+            console.log(res.affectedRows + " new Role created!\n");
             // Call updateProduct AFTER the INSERT completes
             start();
         }
-        );
-    
-        // logs the actual query being run
-        console.log(query.sql);
-}
-
-function addDept(message, name) {
-    // based on their answer
-    console.log("Creating a new Department...\n");
-    console.log("Department name: ", name);
-    
-    let query = connection.query(
-    "INSERT INTO department SET ?",
-    {
-        name: name
-    },
-    function(err, res) {
-        if (err) throw err;
-        console.log(res.affectedRows + " new Department created!\n");
-        // Call updateProduct AFTER the INSERT completes
-        start();
-    }
     );
 
     // logs the actual query being run
     console.log(query.sql);
 }
 
+//Remove a Role
+function delRole(message, id) {
+    // based on their answer
+    
+    let query = "SELECT role.id AS Id, role.title AS Title, role.salary AS Salary, role.department_id FROM role;";
+    connection.query(query, function (err, res) {
+        if (err) throw err;
+        console.log("\n");
+        headingMsg(message);
+        console.log(divider.repeat(120));
+        console.log("Res: ", res)
+        inquirer.prompt([{
+            type: "rawlist",
+            message: "Choose the Role you wish to Delete",
+            name: "id",
+            choices: function () {
+                const choiceArr = [];
+                res.forEach(function (index) {
+                    choiceArr.push(`${index.Id} ${index.Title}`)
+                })
+                return choiceArr;
+            }
+        }])
+            .then(function (answer) {
+                //console.log('answer', answer.id);
+                let idSplit = answer.id.split(" ");
+                //console.log("IdSplit: ",idSplit);
+                let id = parseInt(idSplit[0]);
+                connection.query(
+                    "DELETE FROM role WHERE ?",
+                    {
+                        id: id
+                    },
+                    function (err, res) {
+                        if (err) throw err;
+                        console.log(res.affectedRows + " role deleted!\n");
+                        // Call  AFTER the DELETE completes
+                        console.log(divider.repeat(120));
+                        console.table(res);
+                        start();
+                    }
+                );
+            })
+            .catch(error => {
+                if (error.isTtyError) {
+                    // Prompt couldn't be rendered in the current environment
+                } else {
+                    console.log(error);
+                }
+            })
+    })
+    
+}
+
+//List Roles for Choice in New Employee
+function listRole(id) { // List of Roles from DB
+    let query = "SELECT role.id AS Id, role.title AS Title, role.salary AS Salary, role.department_id FROM role;";
+    connection.query(query, function (err, res) {
+        if (err) throw err;
+        console.log("\n");
+        console.log(divider.repeat(120));
+        //console.log("Res: ", res)
+        for(const choice of res) {
+            listRoleArray.push(`${parseInt(choice.Id)} ${choice.Title}`)
+        }
+        console.log('ran')
+        //start();// function to start the menu and general program
+        listMan(id);
+    })
+};
+
+//Add a Department
+function addDept(message, name) {
+    // based on their answer
+    console.log("Creating a new Department...\n");
+    console.log("Department name: ", name);
+
+    let query = connection.query(
+        "INSERT INTO department SET ?",
+        {
+            name: name
+        },
+        function (err, res) {
+            if (err) throw err;
+            console.log(res.affectedRows + " new Department created!\n");
+            // Call updateProduct AFTER the INSERT completes
+            start();
+        }
+    );
+
+    // logs the actual query being run
+    console.log(query.sql);
+}
+
+//View All Departments
 function viewDept(message) {
     let query = "SELECT department.id AS Id, department.name AS Department FROM department;";
 
+    connection.query(query, function (err, res) {
+        if (err) throw err;
+        console.log("\n");
+        headingMsg(message);
+        console.log(divider.repeat(120));
+        console.table(res);
+    })
+    start();
+
+};
+
+//Remove a Department
+function delDept(message, id) {
+    // based on their answer
+    let idSplit ="";
+    let query = "SELECT department.id AS Id, department.name AS Department FROM department;";
     connection.query(query, function (err, res) {
         if (err) throw err;
         console.log("\n");
@@ -146,42 +283,106 @@ function viewDept(message) {
             )
         );
         console.log(divider.repeat(120));
-        console.table(res);
+        console.log("Res: ", res)
+        inquirer.prompt([{
+            type: "rawlist",
+            message: "Choose the Department you wish to Delete",
+            name: "id",
+            choices: function () {
+                const choiceArr = [];
+                res.forEach(function (index) {
+                    choiceArr.push(`${index.Id} ${index.Department}`)
+                })
+                return choiceArr;
+            }
+        }])
+            .then(function (answer) {
+                //console.log('answer', answer.id);
+                idSplit = answer.id.split(" ");
+                //console.log("IdSplit: ",idSplit);
+                let id = parseInt(idSplit[0]);
+                connection.query(
+                    "DELETE FROM department WHERE ?",
+                    {
+                        id: id
+                    },
+                    function (err, res) {
+                        if (err) throw err;
+                        console.log(res.affectedRows + " department deleted!\n");
+                        // Call  AFTER the DELETE completes
+                        console.log(divider.repeat(120));
+                        console.table(res);
+                    }
+                );
+            })
+            .catch(error => {
+                if (error.isTtyError) {
+                    // Prompt couldn't be rendered in the current environment
+                } else {
+                    console.log(error);
+                }
+            })
     })
     start();
+}
 
+//List Managers for N
+function listMan(message) { // List of Roles from DB
+    
+    let query = "SELECT employee.id AS `Manager Id`, employee.first_name AS FirstName, employee.last_name AS LastName, role.title AS Title, "; 
+    query += "department.name AS Department FROM employee LEFT JOIN role on employee.role_id = role.id LEFT JOIN department on role.department_id = department.id "; 
+    query += "LEFT JOIN employee manager on manager.id = employee.manager_id WHERE employee.manager_id IS NULL;";
+    connection.query(query, function (err, res) {
+        if (err) throw err;
+        console.log("listMan",message);
+        if (message){
+            headingMsg(message);
+            console.log("\n");
+            console.log(divider.repeat(120));
+            console.table(res);
+        } else {
+            headingMsg("Employee Manager");
+        }
+        
+        // for(const choice of res) {
+        //     listManArray.push(`${parseInt(choice.Id)} ${choice.FirstName} ${choice.LastName} ${choice.Title} ${choice.Department}`)
+        // }
+        
+        start();// function to start the menu and general program
+    })
 };
 
 function start() {
+    if (!message){
+        console.log(
+            chalk.bold.blueBright(
+                figlet.textSync('Employee Manager', { horizontalLayout: 'fitted' })
+            )
+        );
+    }
     inquirer
         .prompt([
             {
-                type: "list",
+                type: "rawlist",
                 message: "What would you like to do? \n Choose 'Exit' to close the program.\n",
                 choices: [
-                    "======================================",
                     "View ALL Employees",
                     "View ALL Employees by Department",
                     "View ALL Employees by Manager",
-                    "======================================",
+                    "View all Managers",
+                    "View all Departments",
+                    "View all Roles",
+                    "Add a Department",
+                    "Add a Role",
+                    "Add Manager",
                     "ADD an Employee",
+                    "Remove a Department",
+                    "Remove a Role",
+                    "Remove a Manager",
                     "REMOVE an Employee",
                     "UPDATE Employee Role",
                     "Update Employee Manager",
                     "Update Employee Department",
-                    "======================================",
-                    "View all Roles",
-                    "Add a Role",
-                    "Remove a Role",
-                    "======================================",
-                    "View all Managers",
-                    "Add Manager",
-                    "Remove a Manager",
-                    "======================================",
-                    "View all Departments",
-                    "Add a Department",
-                    "Remove a Department",
-                    "======================================",
                     "Exit"
                 ],
                 name: "start",
@@ -228,10 +429,55 @@ function start() {
                     }
                 }
             },
+            {
+                type: "input",
+                message: "What is the Employee's first name?",
+                name: "first_name",
+                when: (start) => start.start === "ADD an Employee",
+                validate: async (input) => {
+                    if (await input.trim().length === 0) {
+                        return "NOT a valid entry! Please try again.";
+                    } else if (input.match(/^[a-zA-Z]+( [a-zA-Z]+)*$/i)) {
+                        return true;
+                    } else {
+                        return "Not a valid entry!"
+                    }
+                }
+            },
+            {
+                type: "input",
+                message: "What is the Employee's last name?",
+                name: "last_name",
+                when: (start) => start.start === "ADD an Employee",
+                validate: async (input) => {
+                    if (await input.trim().length === 0) {
+                        return "NOT a valid entry! Please try again.";
+                    } else if (input.match(/^[a-zA-Z]+( [a-zA-Z]+)*$/i)) {
+                        return true;
+                    } else {
+                        return "Not a valid entry!"
+                    }
+                }
+            },
+            {
+                type: "rawlist",
+                message: "What is the Employee's role?",
+                name: "role_id",
+                when: (start) => start.start === "ADD an Employee",
+                choices: listRoleArray,
+            },
+            {
+                type: "rawlist",
+                message: "Who is the Employee's manager?",
+                name: "manager_id",
+                when: (start) => start.start === "ADD an Employee",
+                choices: listManArray, 
+            },
+            
         ])
         .then(function (answer) {
             // based on their answer, either call the bid or the post functions
-            console.log("\n",answer);
+            console.log("\n", answer);
             message = answer.start;
             switch (answer.start) {
                 case "======================================":
@@ -252,7 +498,7 @@ function start() {
                     break;
 
                 case "ADD an Employee":
-                    songSearch();
+                    addEmployee(message);
                     break;
 
                 case "REMOVE an Employee":
@@ -260,7 +506,7 @@ function start() {
                     break;
 
                 case "UPDATE Employee Role":
-                    multiSearch();
+                    updateRole(message);
                     break;
 
                 case "Update Employee Manager":
@@ -280,15 +526,15 @@ function start() {
                     break;
 
                 case "Remove a Role":
-                    removeRole(message, answer.role, answer.salary, answer.department_id); //Will only need the role primary id but just simplier to copy/paste ATM
+                    delRole(message); //Will only need the role primary id but just simplier to copy/paste ATM
                     break;
 
                 case "View all Managers":
-                    multiSearch();
+                    listMan(message);
                     break;
 
                 case "Add Manager":
-                    rangeSearch();
+                    addManager(message);
                     break;
 
                 case "Remove a Manager":
@@ -304,27 +550,27 @@ function start() {
                     break;
 
                 case "Remove a Department":
-                    songSearch();
+                    delDept(message);
                     break;
 
                 case "Exit":
                     connection.end();
-                    break;
                     console.log(
                         chalk.yellow(
                             figlet.textSync('\nTHANK YOU for using \nEmployee Manager!\n', { horizontalLayout: 'full' })
                         )
                     );
-            }
-        })    
-        .catch(error => {
-            if(error.isTtyError) {
-            // Prompt couldn't be rendered in the current environment
-            } else {
-            console.log(error);
+                    break;
             }
         })
-    
+        .catch(error => {
+            if (error.isTtyError) {
+                // Prompt couldn't be rendered in the current environment
+            } else {
+                console.log(error);
+            }
+        })
+
 };
 
 
@@ -334,195 +580,15 @@ connection.connect(function (err) {
     // start();
 });
 
-function afterConnection() { //test function to get intial employee list from db
-    connection.query("SELECT * FROM employee", function (err, res) {
-        if (err) throw err;
-        console.table(res);
-        //connection.end();
-    });
-}
-
-let role = [];
 function getRole(message) {
     connection.query("SELECT * FROM role", function (err, res) {
         if (err) throw err;
-        console.log("\n");
-        console.log(
-            chalk.yellow(
-                figlet.textSync(message, { horizontalLayout: 'fitted' })
-            )
-        );
+        //console.log("\n");
+        headingMsg(message);
         console.log(divider.repeat(120));
         console.table(res);
         start();
     })
 };
-
-let startQues =
-    [
-        {
-            type: "list",
-            message: "What would you like to do? \n Choose 'Exit' to close the program.\n",
-            choices: [
-                "View ALL Employees",
-                "View ALL Employees by DEPARTMENT",
-                "View ALL Employees by Manager",
-                "ADD an Employee",
-                "REMOVE an employee",
-                "UPDATE Employee Role",
-                "Update Employee Manager",
-                "Update Employee Department",
-                "View all Roles",
-                "Add a Role",
-                "Remove a Role",
-                "View all Managers",
-                "Add Manager",
-                "Remove a Manager",
-                "Exit"
-            ],
-            name: "start",
-        },
-        {
-            type: "input",
-            message: "What is the Employee's first name?",
-            name: "name",
-            when: (employeeQues) => employeeQues.role !== "Exit",
-            validate: async (input) => {
-                if (await input.trim().length === 0) {
-                    return "NOT a valid entry! Please try again.";
-                } else if (input.match(/^[a-zA-Z]+( [a-zA-Z]+)*$/i)) {
-                    return true;
-                } else {
-                    return "Not a valid entry!"
-                }
-            }
-        },
-        {
-            type: "input",
-            message: "What is the Salary for that Role(Numbers only)?",
-            name: "id",
-            when: (employeeQues) => employeeQues.role !== "Exit",
-            validate: async (input) => {
-                if (input.match(/^[0-9]+$/i)) {
-                    return true;
-                } else {
-                    return "Not valid. Enter ID number."
-                }
-            }
-        },
-        {
-            type: "list",
-            message: "What is the Employee's manager",
-            name: "employeeManager",
-            choices: [
-                "View ALL Employees",
-                "View ALL Employees by DEPARTMENT",
-                "View ALL Employees by Manager",
-                "ADD an Employee",
-                "REMOVE an employee",
-                "UPDATE Employee Role",
-                "Update Employee Manager",
-                "Update Employee Department",
-                "View all Roles",
-                "Add a Role",
-                "Remove a Role",
-                "View all Managers",
-                "Add Manager",
-                "Remove a Manager",
-                "Exit"
-            ],
-            name: "start",
-            when: (employeeQues) => employeeQues.role !== "Exit",
-            validate: async (input) => {
-                if (input.match(/^([a-zA-Z0-9_\-\.]+)@([a-zA-Z0-9_\-\.]+)\.([a-zA-Z]{2,5})$/i)) {
-                    return true;
-                } else {
-                    return "Not a valid email address."
-                }
-            }
-        }
-    ];
-
-const newEmployee = async () => {
-    try {
-        console.log("New Employee Questions");
-        const input = await inquirer
-            .prompt([
-                /* Pass your questions in here */
-                {
-                    type: "input",
-                    message: "What is the Employee's first name?",
-                    name: "first_name",
-                    when: (start) => start.start === "ADD an Employee",
-                    validate: async (input) => {
-                        if (await input.trim().length === 0) {
-                            return "NOT a valid entry! Please try again.";
-                        } else if (input.match(/^[a-zA-Z]+( [a-zA-Z]+)*$/i)) {
-                            return true;
-                        } else {
-                            return "Not a valid entry!"
-                        }
-                    }
-                },
-                {
-                    type: "input",
-                    message: "What is the Employee's last name?",
-                    name: "last_name",
-                    when: (start) => start.start === "ADD an Employee",
-                    validate: async (input) => {
-                        if (await input.trim().length === 0) {
-                            return "NOT a valid entry! Please try again.";
-                        } else if (input.match(/^[a-zA-Z]+( [a-zA-Z]+)*$/i)) {
-                            return true;
-                        } else {
-                            return "Not a valid entry!"
-                        }
-                    }
-                },
-                {
-                    type: "list",
-                    message: "What is the Employee's Department?",
-                    name: "empdept",
-                    when: (start) => start.start === "ADD an Employee",
-                    validate: async (input) => {
-                        if (await input.trim().length === 0) {
-                            return "NOT a valid entry! Please try again.";
-                        } else if (input.match(/^[a-zA-Z]+( [a-zA-Z]+)*$/i)) {
-                            return true;
-                        } else {
-                            return "Not a valid entry!"
-                        }
-                    }
-                },
-                {
-                    type: "list",
-                    message: "What is the Employee's role?",
-                    name: "first_name",
-                    when: (start) => start.start === "ADD an Employee",
-                    validate: async (input) => {
-                        if (await input.trim().length === 0) {
-                            return "NOT a valid entry! Please try again.";
-                        } else if (input.match(/^[a-zA-Z]+( [a-zA-Z]+)*$/i)) {
-                            return true;
-                        } else {
-                            return "Not a valid entry!"
-                        }
-                    }
-                },
-            ])
-            .then(answers => {
-                // Use user feedback for... whatever!!
-            })
-            .catch(error => {
-                if (error.isTtyError) {
-                    // Prompt couldn't be rendered in the current environment
-                } else {
-                    // Something else when wrong
-                }
-            });
-    } catch (err) {
-        console.log(err)
-    }
-}
 
 init();
