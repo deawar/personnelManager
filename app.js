@@ -3,8 +3,19 @@ const chalk = require('chalk');
 const figlet = require('figlet');
 const mysql = require("mysql");
 const cTable = require('console.table');
-
+var connection;
 const proc = require('process');
+if (process.env.JAWSDB_URL) {
+    connection = mysql.createConnection(process.env.JAWSDB_URL);
+} else {
+    connection = mysql.createConnection({
+        host: "localhost",
+        port: 3306, // Your port; if not 3306
+        user: "root", // Your username
+        password: "1636Shadowsonny", // Your password
+        database: "companydb"
+    });
+}
 let PID = proc.pid;
 let message = "";
 let divider = "=";
@@ -12,13 +23,6 @@ let role = [];
 let listRoleArray = [];
 let listManArray = [];
 let id;
-const connection = mysql.createConnection({
-    host: "localhost",
-    port: 3306, // Your port; if not 3306
-    user: "root", // Your username
-    password: "1636Shadowsonny", // Your password
-    database: "companydb"
-});
 
 function headingMsg() {
     console.clear();
@@ -29,7 +33,7 @@ function headingMsg() {
     );
 };
 
- function init() {
+function init() {
     console.clear()
     //console.log(chalk.greenBright("Server up at PID: " + chalk.blue(PID)));
     console.log(
@@ -38,9 +42,9 @@ function headingMsg() {
         )
     );
     //afterConnection();
-    
+
     listRole(id)
-    
+
 
 }
 //View All Employees
@@ -92,51 +96,55 @@ function empMan(message) {
 function addEmployee(message, first_name, last_name, role_id, manager_id) {
     // based on their answer
     headingMsg(message);
+    role_id = parseInt(role_id);
     manager_id = parseInt(manager_id);
+    console.log("Manager ID: ", manager_id, role_id);
+    console.log("Preparing to Add a new Employee...\n" + first_name + " " + last_name);
+    // query = connection.query("SELECT * FROM employee WHERE ?;"),
+    //     {
+    //         first_name: first_name,
+    //         last_name: last_name
+    //     },
+    // function (err, res) {
+    //     if (err) {
+    //         throw err;
+    //         console.log(divider.repeat(120));
+    //     } else {
+    //         if (res && res.length) {
+    //         console.log("Employee: " + first_name + " " + last_name + " already Present in Database.");
+    //         } else {
+            let query = connection.query(
+                "INSERT INTO employee SET ?",
+                {
+                    first_name: first_name,
+                    last_name: last_name,
+                    role_id: role_id,
+                    manager_id: manager_id
+                },
+                function (err, res) {
+                    if (err) throw err;
 
-    console.log("Preparing to Add a new Employee...\n");
-    let doesExist = connection.query("SELECT id FROM employee WHERE first_name=? AND last_name=?;",
-        {
-            first_name: first_name,
-            last_name: last_name
-        },
-        function (err, res) {
-            if (err) throw err;
-            console.log(divider.repeat(120));
-        }
-    );    
-    if (doesExist == 0) {
-        let query = connection.query(
-            "INSERT INTO employee SET ?",
-            {
-                first_name: first_name,
-                last_name: last_name,
-                role_id: role_id,
-                manager_id: manager_id
-            },
-            function (err, res) {
-                if (err) throw err;
-                
-                console.log(divider.repeat(120));
-                console.log(res.affectedRows + " new Employee inserted!\n");
-                // Call updateProduct AFTER the INSERT completes
-            }
-        );
-        console.log("A New Employee:\n");
-        console.log("addName: ", first_name + " " + last_name);
-        console.log("\naddRoleId: ", role_id);
-        console.log("\naddManager_Id: ", manager_id + "\nwas added to the Database.");
-    } else{
-        console.log("Employee: "+ first_name + " " + last_name + "already Present in Database.")
-    }
-        
-        // logs the actual query being run
+                    console.log(divider.repeat(120));
+                    console.log(res.affectedRows + " new Employee inserted!\n");
+                    // Call updateProduct AFTER the INSERT completes
+                }
+            );
+            console.log("A New Employee:\n");
+            console.log("addName: ", first_name + " " + last_name);
+            console.log("\naddRoleId: ", role_id);
+            console.log("\naddManager_Id: ", manager_id + "\nwas added to the Database.");
+
+    //         }
+    //     }
+    // }    
     start();
+
+
     // console.log(query.sql);
-}
+};
 
 //Add a Role
-function addRole(message, title, salary,department_id) {
+function addRole(message, title, salary, department_id) {
     // based on their answer
     console.log("Creating a new Role...\n");
     console.log("Role Title: ", title);
@@ -163,7 +171,7 @@ function addRole(message, title, salary,department_id) {
 //Remove a Role
 function delRole(message, id) {
     // based on their answer
-    
+
     let query = "SELECT role.id AS Id, role.title AS Title, role.salary AS Salary, role.department_id FROM role;";
     connection.query(query, function (err, res) {
         if (err) throw err;
@@ -211,7 +219,7 @@ function delRole(message, id) {
                 }
             })
     })
-    
+
 }
 
 //List Roles for Choice in New Employee
@@ -222,7 +230,7 @@ function listRole(id) { // List of Roles from DB
         console.log("\n");
         console.log(divider.repeat(120));
         //console.log("Res: ", res)
-        for(const choice of res) {
+        for (const choice of res) {
             listRoleArray.push(`${parseInt(choice.Id)} ${choice.Title}`)
         }
         console.log('ran')
@@ -272,7 +280,7 @@ function viewDept(message) {
 //Remove a Department
 function delDept(message, id) {
     // based on their answer
-    let idSplit ="";
+    let idSplit = "";
     let query = "SELECT department.id AS Id, department.name AS Department FROM department;";
     connection.query(query, function (err, res) {
         if (err) throw err;
@@ -328,14 +336,14 @@ function delDept(message, id) {
 
 //List Managers for N
 function listMan(message) { // List of Roles from DB
-    
-    let query = "SELECT employee.id AS `Manager Id`, employee.first_name AS FirstName, employee.last_name AS LastName, role.title AS Title, "; 
-    query += "department.name AS Department FROM employee LEFT JOIN role on employee.role_id = role.id LEFT JOIN department on role.department_id = department.id "; 
+
+    let query = "SELECT employee.id AS `Id`, employee.first_name AS FirstName, employee.last_name AS LastName, role.title AS Title, ";
+    query += "department.name AS Department FROM employee LEFT JOIN role on employee.role_id = role.id LEFT JOIN department on role.department_id = department.id ";
     query += "LEFT JOIN employee manager on manager.id = employee.manager_id WHERE employee.manager_id IS NULL;";
     connection.query(query, function (err, res) {
         if (err) throw err;
-        console.log("listMan",message);
-        if (message){
+        console.log("listMan", message);
+        if (message) {
             headingMsg(message);
             console.log("\n");
             console.log(divider.repeat(120));
@@ -343,17 +351,21 @@ function listMan(message) { // List of Roles from DB
         } else {
             headingMsg("Employee Manager");
         }
-        
-        // for(const choice of res) {
-        //     listManArray.push(`${parseInt(choice.Id)} ${choice.FirstName} ${choice.LastName} ${choice.Title} ${choice.Department}`)
-        // }
-        
+        console.table("top", res);
+        let idSplit = JSON.stringify(res);
+
+        let id = idSplit.Id;
+
+        for (const choice of res) {
+            listManArray.push(`${choice.Id} ${choice.FirstName} ${choice.LastName} ${choice.Title} ${choice.Department}`)
+        }
+        console.log("listManArr: ", listManArray);//<---------------------------Remove Please
         start();// function to start the menu and general program
     })
 };
 
 function start() {
-    if (!message){
+    if (!message) {
         console.log(
             chalk.bold.blueBright(
                 figlet.textSync('Employee Manager', { horizontalLayout: 'fitted' })
@@ -471,9 +483,9 @@ function start() {
                 message: "Who is the Employee's manager?",
                 name: "manager_id",
                 when: (start) => start.start === "ADD an Employee",
-                choices: listManArray, 
+                choices: listManArray,
             },
-            
+
         ])
         .then(function (answer) {
             // based on their answer, either call the bid or the post functions
@@ -498,7 +510,7 @@ function start() {
                     break;
 
                 case "ADD an Employee":
-                    addEmployee(message);
+                    addEmployee(message, answer.first_name, answer.last_name, answer.role_id, answer.manager_id);
                     break;
 
                 case "REMOVE an Employee":
